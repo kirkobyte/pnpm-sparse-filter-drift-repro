@@ -1,0 +1,6 @@
+packages:
+  - packages/a
+  - packages/b
+  # packages/c stays listed here even though the sparse checkout in repro.sh
+  # keeps it off disk.
+  - packages/c

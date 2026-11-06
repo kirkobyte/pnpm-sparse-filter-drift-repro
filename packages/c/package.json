@@ -1,0 +1,9 @@
+{
+  "name": "@repro/c",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "bufferutil": "4.0.9",
+    "utf-8-validate": "6.0.5"
+  }
+}

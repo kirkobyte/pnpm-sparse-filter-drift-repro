@@ -1,0 +1,5 @@
+{
+  "name": "pnpm-sparse-filter-drift-repro",
+  "private": true,
+  "packageManager": "pnpm@12.16.1"
+}
