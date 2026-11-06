@@ -10,7 +10,6 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-INSTALL=(pnpm install --lockfile-only --fix-lockfile --filter @repro/a --filter @repro/b)
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -23,13 +22,11 @@ run() {
     git -C "$dir" sparse-checkout set --cone "$@"
   fi
   echo "== $name checkout (packages on disk: $(ls "$dir/packages" | paste -sd' ' -))"
-  echo "\$ ${INSTALL[*]}"
-  (cd "$dir" && "${INSTALL[@]}" >/dev/null)
-  if git -C "$dir" diff --quiet -- pnpm-lock.yaml; then
-    echo "pnpm-lock.yaml: unchanged"
-  else
-    git -C "$dir" --no-pager diff -- pnpm-lock.yaml
-  fi
+  echo "\$ (cd packages/a && pnpm pkg set dependencies.postcss-load-config=6.0.1)"
+  (cd "$dir/packages/a" && pnpm pkg set dependencies.postcss-load-config=6.0.1)
+  echo "\$ pnpm install --filter @repro/a --filter @repro/b"
+  (cd "$dir" && pnpm install --filter @repro/a --filter @repro/b >/dev/null)
+  git -C "$dir" --no-pager diff -- pnpm-lock.yaml
   echo
 }
 
@@ -38,9 +35,12 @@ echo
 run full
 run sparse packages/a packages/b
 
-echo "EXPECTED: pnpm-lock.yaml is unchanged in both checkouts."
-if git -C "$TMP/sparse" diff --quiet -- pnpm-lock.yaml; then
-  echo "ACTUAL:   unchanged in both (the issue did not reproduce)."
+echo "== full vs sparse lockfile"
+diff "$TMP/full/pnpm-lock.yaml" "$TMP/sparse/pnpm-lock.yaml" || true
+echo
+echo "EXPECTED: both checkouts write the same pnpm-lock.yaml."
+if cmp -s "$TMP/full/pnpm-lock.yaml" "$TMP/sparse/pnpm-lock.yaml"; then
+  echo "ACTUAL:   they are the same (the issue did not reproduce)."
 else
-  echo "ACTUAL:   the sparse checkout changes the ws peer resolution and adds optional: true."
+  echo "ACTUAL:   the sparse checkout resolves the yaml peer to 2.8.0 (not 2.9.0) and marks jiti optional."
 fi
